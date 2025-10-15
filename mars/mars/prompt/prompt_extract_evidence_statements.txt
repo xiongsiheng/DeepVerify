@@ -1,0 +1,16 @@
+Given the claim, extract relevant atomic statements from the document.
+
+Input Example:
+### Claim: 
+In ultra-high performance concrete, using both polypropylene and steel fibers leads to higher compressive strength than using either fiber type alone.
+
+### Document:
+The compressive strengths of S2CF2.5 and S2CF5 exhibit respective increases of 3.5% and 6.7% compared to the control group S2. The results of this paper show that use of basalt fiber with reasonable content will not affect the workability of the concrete mixture while increasing the flexural strength, compressive strength, and elastic modulus of the UHPC. UHPC sample using 1.5% fiber content will give the highest compressive and flexural strength values, this value increased about 8.5% compared to the control sample without fibers. The optimum reinforcement system, which comprised PVA fiber and CNF of 0.37 and 0.047 vol.% of UHPC improved the compressive strength of plain UHPC by 7.5%, respectively.
+
+Output Example:
+The compressive strength of the S2CF2.5 sample is 3.5% higher than that of the control group S2.
+The compressive strength of the S2CF5 sample is 6.7% higher than that of the control group S2.
+Using basalt fiber in UHPC, when added in a reasonable amount, does not affect the workability of the concrete mixture.
+Adding basalt fiber increases the flexural strength, compressive strength, and elastic modulus of UHPC.
+An UHPC sample with a 1.5% fiber content exhibits the highest compressive and flexural strength values, with the compressive strength increased by about 8.5% compared to a control sample without fibers.
+An optimum reinforcement system that includes PVA fiber and CNF at 0.37 vol.% and 0.047 vol.% of UHPC, respectively, improves the compressive strength of plain UHPC by 7.5%.

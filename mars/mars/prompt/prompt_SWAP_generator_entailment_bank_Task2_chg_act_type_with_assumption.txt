@@ -1,0 +1,48 @@
+Solve a given claim verification problem by breaking it into a sequence of steps using the specified reinforcement learning format. Follow the predefined keyword sequence:
+"Goal", "Initial state", "Initial graph", "Action 1", "State 1", "Graph 1", "Action 2", "State 2", "Graph 2", ..., "Final answer".
+For each graph, include two parts:
+1. "Statement": Key statements represented as "s1", "s2", "s3", ... .
+2. "Entailment": The entailment relationship for each statement. The relationship must be one of the following:
+   - "Evidence"
+   - "Assumption"
+   - A list of previous statements (e.g., ["s1", "s2"]) that logically lead to the current statement.
+If partial output is given, continue reasoning directly from that point WITHOUT reintroducing prior steps. You should STRICTLY follow the FORMAT demonstrated in examples.
+
+
+### Example Input 1:
+"Problem": "sent1: leo is a kind of constellation sent2: a circle is a kind of shape sent3: approximately means about sent4: planets orbit stars sent5: a constellation contains stars sent6: years ( y ) are a metric unit used for measuring time generally used for values between 1 and 14000000000 sent7: similar means in common sent8: the solar system is a kind of system\n\nclaim: the earth revolving around the sun causes leo to appear in different areas in the sky at different times of year"
+
+### Example Output 1:
+"Goal": "Determine the claim 'The earth revolving around the sun causes Leo to appear in different areas in the sky at different times of year' is 'supported' or 'refuted'."  
+"Initial state": "We have 8 sentences 'Leo is a kind of constellation', 'A circle is a kind of shape', 'Approximately means about', 'Planets orbit stars', 'A constellation contains stars', 'Years ( y ) are a metric unit used for measuring time generally used for values between 1 and 14000000000', 'Similar means in common', 'The solar system is a kind of system'"  
+"Initial graph": {"Statement": {"s1": "Leo is a kind of constellation.", "s2": "A circle is a kind of shape.", "s3": "Approximately means about.", "s4": "Planets orbit stars.", "s5": "A constellation contains stars.", "s6": "Years ( y ) are a metric unit used for measuring time generally used for values between 1 and 14000000000.", "s7": "Similar means in common.", "s8": "The solar system is a kind of system."}, "Entailment": {"s1": "Evidence", "s2": "Evidence", "s3": "Evidence", "s4": "Evidence", "s5": "Evidence", "s6": "Evidence", "s7": "Evidence", "s8": "Evidence"}}
+"Action 1": "Prove 'Leo is a constellation containing stars'."
+"State 1": "Based on s1 (Leo is a kind of constellation) and s5 (A constellation contains stars), we can know Leo is a constellation containing stars."  
+"Graph 1": {"Statement": {"s9": "Leo is a constellation containing stars."}, "Entailment": {"s9": ["s1", "s5"]}}  
+"Action 2": "Prove 'The earth revolving around the sun causes Leo to appear in different areas in the sky at different times of year'."  
+"State 2": "After chekcing all avaliable information, we found that the only useful statement is s9 (Leo is a constellation containing stars), which is insuffient to prove the target statement. Thus, we need to make an assumption (The earth revolving around the sun causes stars to appear in different areas in the sky at different times of year). Based on s9 and the assumption, we can know the earth revolving around the sun causes Leo to appear in different areas in the sky at different times of year."
+"Graph 2": {"Statement": {"s10": "The earth revolving around the sun causes stars to appear in different areas in the sky at different times of year.", "s11": "The earth revolving around the sun causes Leo to appear in different areas in the sky at different times of year."}, "Entailment": {"s10": "Assumption", "s11": ["s9", "s10"]}}
+"Action 3": "Assess the veracity of the claim."
+ "State 3": "Based on s11 (The earth revolving around the sun causes Leo to appear in different areas in the sky at different times of year) and the claim (The earth revolving around the sun causes Leo to appear in different areas in the sky at different times of year), we know that the claim is supported." 
+"Final answer": "Supported"
+
+
+### Example Input 2:
+"Problem": "sent1: if something used to be in the past then that something has changed sent2: appear is similar to apparent sent3: earth is a kind of celestial object sent4: a star is a kind of celestial object / celestial body sent5: position means a place in a structure sent6: motion / movement means moving / to move sent7: the earth rotating on its axis causes stars to appear to move across the sky at night sent8: a phase change is when matter / a substance changes from one state of matter into another state of matter sent9: if something is visible , then that something can be observed\n\nclaim: the earth revolves around the sun causes stars to move relative to the horizon during the night"
+
+### Example Output 2:
+"Goal": "Determine whether the claim 'The earth revolves around the sun causes stars to move relative to the horizon during the night' is 'supported' or 'refuted'."
+"Initial state": "We have 9 sentences: 'If something used to be in the past then that something has changed', 'Appear is similar to apparent', 'Earth is a kind of celestial object', 'A star is a kind of celestial object / celestial body', 'Position means a place in a structure', 'Motion / movement means moving / to move', 'The earth rotating on its axis causes stars to appear to move across the sky at night', 'A phase change is when matter / a substance changes from one state of matter into another state of matter', 'If something is visible , then that something can be observed'."  
+"Initial graph":  {"Statement":  {"s1": "If something used to be in the past then that something has changed.", "s2": "Appear is similar to apparent", "s3": "Earth is a kind of celestial object.", "s4": "A star is a kind of celestial object / celestial body.",  "s5": "Position means a place in a structure.", "s6": "Motion / movement means moving / to move.", "s7": "The earth rotating on its axis causes stars to appear to move across the sky at night.", "s8": "A phase change is when matter / a substance changes from one state of matter into another state of matter.", "s9": "If something is visible , then that something can be observed."},  "Entailment":  {"s1": "Evidence",  "s2": "Evidence",  "s3": "Evidence",  "s4": "Evidence",  "s5": "Evidence", "s6": "Evidence", "s7": "Evidence", "s8": "Evidence", "s9": "Evidence"}}
+"Action 1": "Prove 'The apparent motion of stars is when stars appear to move relative to Earth's position'."
+"State 1": "After chekcing all avaliable information, we found that the only useful statements are s3 (Earth is a kind of celestial object), and s4 (A star is a kind of celestial object / celestial body), which is insuffient to prove the target statement. Thus, we need to make an assumption (Apparent motion is when an object appears to move relative to another object's position). Based on s3, s4, and the assumption, we can infer that the apparent motion of stars is when stars appear to move relative to Earth's position."
+"Graph 1":  {"Statement":  {"s10": "Apparent motion is when an object appears to move relative to another object's position.", "s11": "The apparent motion of stars is when stars appear to move relative to Earth's position."},  "Entailment":  {"s10": "Assumption", "s11": ["s3", "s4", "s10"]}}
+"Action 2": "Prove 'The earth rotating on its axis causes the apparent motion of stars'."
+"State 2": "Based on s11 (The apparent motion of stars is when stars appear to move relative to Earth's position) and s7 (The earth rotating on its axis causes stars to appear to move across the sky at night), we can infer that the earth rotating on its axis causes the apparent motion of stars."  
+"Graph 2":  {"Statement":  {"s12": "The earth rotating on its axis causes the apparent motion of stars."},  "Entailment":  {"s12": ["s11", "s7"]}}  
+"Action 3": "Prove 'The earth rotating on its axis causes stars to move relative to the horizon during the night'."
+"State 3": "After chekcing all avaliable information, we found that the only useful statement is s12 (The earth rotating on its axis causes the apparent motion of stars), which is insuffient to prove the target statement. Thus, we need to make an assumption (Stars appear to move relative to the horizon during the night). Based on s12 and the assumption, we can infer that the earth rotating on its axis causes stars to move relative to the horizon during the night."
+"Graph 3":  {"Statement":  {"s13": "Stars appear to move relative to the horizon during the night.", "s14": "The earth rotating on its axis causes stars to move relative to the horizon during the night."},  "Entailment":  {"s13": "Assumption", "s14": ["s12", "s13"]}} 
+"Action 4": "Assess the veracity of the claim."
+"State 4": "Based on s14 (The earth rotating on its axis causes stars to move relative to the horizon during the night) and the claim (The earth revolves around the sun causes stars to move relative to the horizon during the night), we know the claim is refuted."  
+"Final answer": "Refuted"

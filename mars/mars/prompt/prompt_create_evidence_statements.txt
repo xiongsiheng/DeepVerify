@@ -1,0 +1,55 @@
+Given the claim, provide me some relevant atomic evidence statements.
+
+
+### Example Input 1:
+northern hemisphere will have the most sunlight in winter
+
+### Example Output 1:
+if an object / something is in the sunlight then that object / that something will absorb solar energy 
+daylight is when the sun shines on a location 
+the northern hemisphere is a kind of hemisphere of earth 
+when the season changes , the amount of daylight will change 
+intensity of sunlight is similar to amount of sunlight 
+as the distance of a location from the north pole becomes smaller / closer , the amount of daylight received by that location will increase during the summer 
+receiving sunlight is synonymous with absorbing sunlight 
+a hemisphere is a part of earth 
+sunlight means solar energy 
+the earth being tilted on its rotating axis causes seasons 
+as the latitude of a location decreases , the amount of sunlight in this location will increase 
+being in the sun is synonymous with being in the sunlight 
+days are a kind of unit for measuring time 
+sunshine means sunlight 
+if a place is in summer, then it will have the most sunlight 
+amount of daylight means length of daylight 
+daytime means day 
+to receive sunlight means to absorb sunlight 
+hours are a kind of unit for measuring time 
+sunlight shining means sunlight is provided 
+a hemisphere of earth is a kind of place 
+daylight hours means time during which there is daylight 
+if places are receiving the same amount of sunlight , then these places will have similar seasonal weather pattern 
+period of daylight is synonymous with amount of daylight 
+daylight means sunlight
+
+
+
+### Example Input 2:
+Orbital Angular Momentum (OAM) beams, when used in communication or radar systems, provide a complete orthogonal modal basis set, potentially enabling new encoding and multiplexing techniques.
+
+### Example Output 2:
+The intensity profile of OAM beams typically exhibits a donut-shaped distribution, which distinguishes them from Gaussian beams. 
+Independent data channels facilitate the implementation of new encoding and multiplexing techniques. 
+Each unique orbital angular momentum value corresponds to a distinct OAM mode. 
+Distinct OAM modes are mathematically orthogonal. 
+Precise optical alignment is critical to maintaining the integrity of OAM modes in experimental setups. 
+Studies have indicated that OAM beams can enhance security in communication systems through unique mode structures. 
+Recent experimental work has explored the potential of OAM beams in quantum information processing applications. 
+Combining OAM beams with other multiplexing techniques can further increase data channel capacity. 
+Atmospheric turbulence can distort the helical phase front of OAM beams, affecting mode purity. 
+OAM beams are produced with a helical phase front that imparts a unique orbital angular momentum to each beam. 
+A complete orthogonal modal basis set enables the assignment of independent data channels in communication or radar systems. 
+Practical detection of OAM modes may encounter challenges such as cross-talk between adjacent modes. 
+OAM beams are often generated using spiral phase plates or spatial light modulators. 
+OAM beams have been successfully generated across a range of wavelengths, from microwaves to visible light. 
+Polarization and OAM represent independent degrees of freedom in electromagnetic wave propagation. 
+The set of orthogonal OAM modes forms a complete modal basis set.

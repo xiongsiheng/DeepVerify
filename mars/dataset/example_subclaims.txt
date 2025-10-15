@@ -1,0 +1,3 @@
+Northern hemisphere will have the most sunlight in summer.
+A location closer to the North Pole receives more daylight in the summer than a location farther from the North Pole.
+As the latitude of a location decreases, the amount of sunlight in this location will increase.

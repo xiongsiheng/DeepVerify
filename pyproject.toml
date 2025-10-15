@@ -1,0 +1,44 @@
+[project]
+authors = [{name = "xiongsiheng", email = "18392889055@163.com"}]
+dependencies = ["langchain==1.0.0a4", "langchain-mcp-adapters>=0.1.9", "json-repair>=0.50.1,<0.51", "langchain-google-vertexai>=2.1.2,<3", "langchain-google-genai>=2.1.12,<3"]
+name = "deepverify"
+requires-python = ">= 3.11"
+version = "0.1.0"
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["osx-arm64","linux-64"]
+
+[tool.pixi.pypi-dependencies]
+deepverify = { path = ".", editable = true }
+playwright = ">=1.55.0,<2"
+qdrant-client = ">=1.15.0,<2"
+dspy = ">=3,<4"
+
+[tool.pixi.tasks]
+mcp-server     = "uvicorn deepverify.mcp.server:app --port 8890 --workers 8"
+mcp-server-dev = "uvicorn deepverify.mcp.server:app --port 8890 --workers 1 --reload --reload-dir deepverify/mcp --reload-dir deepverify/tools"
+
+# Domain tools service runs separately with its own dependencies
+
+
+[tool.pixi.dependencies]
+python = ">=3.12,<3.13"
+fastmcp = ">=2.12.2"
+fastapi = ">=0.116.1"
+aiohttp = ">=3.12.15,<4"
+arxiv = ">=2.2.0,<3"
+langchain-openai = ">=0.3.33,<0.4"
+beautifulsoup4 = ">=4.13.5,<5"
+habanero = ">=2.3.0,<3"
+pip = ">=25.2,<26"
+scikit-learn = ">=1.7.2,<2"
+pytest = ">=8.4.2,<9"
+pypdf = ">=6.0.0,<7"
+
+[tool.hatch.metadata]
+allow-direct-references = true

@@ -1,0 +1,1 @@
+The incorporation of steel fibers in UHPC only significantly improves tensile strength when fiber length exceeds 12mm and the fiber aspect ratio is greater than 65, but this relationship breaks down when silica fume content exceeds 25% of total binder weight.

@@ -1,0 +1,96 @@
+Solve a given claim verification problem by breaking it into a sequence of steps using the specified format. Follow the predefined keyword sequence:
+"Goal", "Initial state", "Initial graph", "Action 1", "State 1", "Graph 1", "Action 2", "State 2", "Graph 2", ..., "Final answer".
+
+For each graph, include two parts:
+1. "Statement": Key statements represented as "s1", "s2", "s3", ... .
+2. "Entailment": The entailment relationship for each statement. The relationship must be one of the following:
+   - "Evidence"
+   - "Assumption"
+   - A list of previous statements (e.g., ["s1", "s2"]) that logically lead to the current statement.
+
+"Final answer" can be one of the following options: "very likely", "likely", "neutral", "unlikely", or "very unlikely".
+
+If partial output is given, continue reasoning directly from that point WITHOUT reintroducing prior steps.
+
+You should STRICTLY follow the FORMAT demonstrated in examples.
+
+
+### Example Input 1:
+"Problem": "sent1: Materials scientists have developed a high-temperature, single-phase Cu-3Ta-0.5Li (atomic percent) material that features complexion-stabilized precipitates and remains structurally robust up to 800°C. sent2: This novel alloy also exhibits a yield strength exceeding 1 gigapascal at room temperature. sent3: The breakthrough adds to a growing body of research aimed at designing next-generation structural materials capable of enduring extreme thermal and mechanical stress. sent4: Similar efforts include recent developments in refractory high-entropy alloys and nanostructured ceramics for aerospace and nuclear applications. sent5: Advances like this could lead to stronger, lighter components for jet engines, fusion reactors, and next-gen power grids, which are key infrastructure areas where performance under high heat environments is critical. sent6: There are no known single-phase materials in the Cu–Ta–Li system. sent7: A referenced paper shows a core-shelled system rather than single-phase materials. \n\nclaim: Scientist created a high-temperature novel single phase consisting of Cu-3Ta-0.5Li atomic percent alloy with complexion-stabilized precipitates that is structurally robust up to 800 C, with a yielding strength in excess of 1 gigapascal at room temperature"
+
+### Example Output 1:
+"Goal": "Determine the claim 'Scientist created a high-temperature novel single phase consisting of Cu-3Ta-0.5Li atomic percent alloy with complexion-stabilized precipitates that is structurally robust up to 800 C, with a yielding strength in excess of 1 gigapascal at room temperature' is 'very likely', 'likely', 'neutral', 'unlikely', or 'very unlikely'."
+"Initial state": "We have 7 sentences: 'Materials scientists developed a high-temperature, single-phase Cu-3Ta-0.5Li with complexion-stabilized precipitates, robust up to 800°C', 'The alloy has yield strength >1 GPa at room temperature', 'This is part of research into next-gen structural materials', 'Similar efforts include refractory HEAs and nanostructured ceramics', 'Such advances could impact high-heat infrastructure', 'There are no known single-phase materials in Cu–Ta–Li', 'A referenced paper reports a core-shelled (not single-phase) system'."
+"Initial graph": {"Statement": {"s1": "Single-phase Cu-3Ta-0.5Li with complexion-stabilized precipitates is robust up to 800°C.", "s2": "The alloy’s yield strength exceeds 1 GPa at room temperature.", "s3": "The work is part of broader research on extreme environments.", "s4": "Similar efforts include refractory HEAs and nanostructured ceramics.", "s5": "Potential applications include jet engines, fusion reactors, and power grids.", "s6": "No known single-phase materials exist in the Cu–Ta–Li system.", "s7": "A paper shows a core-shelled system rather than a single phase."}, "Entailment": {"s1": "Evidence", "s2": "Evidence", "s3": "Evidence", "s4": "Evidence", "s5": "Evidence", "s6": "Evidence", "s7": "Evidence"}}
+"Action 1": "Combine s1 and s2 to align with the technical content of the claim."
+"State 1": "From s1 and s2, we infer that the article asserts a single-phase Cu-3Ta-0.5Li with complexion-stabilized precipitates is robust to 800°C and has >1 GPa yield at room temperature."
+"Graph 1": {"Statement": {"s8": "Article-asserted properties match the claim (single phase Cu-3Ta-0.5Li, robust to 800°C, >1 GPa yield)."}, "Entailment": {"s8": ["s1", "s2"]}}
+"Action 2": "Synthesize s6 and s7 to evaluate whether the 'single-phase Cu-3Ta-0.5Li' assertion is contradicted by external evidence."
+"State 2": "s6 and s7 jointly indicate the system is not known to form a single phase; reported structures are core-shelled, contradicting the claim’s single-phase premise."
+"Graph 2": {"Statement": {"s9": "External evidence contradicts the single-phase aspect of the claim."}, "Entailment": {"s9": ["s6", "s7"]}}
+"Action 3": "Compare the article-asserted match (s8) with the contradiction (s9)."
+"State 3": "Because the single-phase requirement is central to the claim and is contradicted by external evidence, the claim is overall not credible."
+"Graph 3": {"Statement": {"s10": "Given conflicting evidence, the claim is very unlikely to be true."}, "Entailment": {"s10": ["s8", "s9"]}}
+"Action 4": "Compare s10 with the claim to produce the final rating."
+"State 4": "s10 directly assesses the claim’s plausibility as very unlikely."
+"Final answer": "very unlikely"
+
+
+### Example Input 2:
+"Problem": "sent1: scientists report a fiber battery made from an anode wire and a cathode wire twisted together in a parallel configuration sent2: in geometry, parallel means two lines (or curves) that remain everywhere equidistant and never intersect sent3: twisted together means the two wires are helically wound around each other (a twisted pair)\n\nclaim: a fiber battery can be made with an anode wire and a cathode wire in a parallel configuration with the anode and cathode wires twisted together."
+
+### Example Output 2:
+"Goal": "Determine the claim 'A fiber battery can be made with an anode wire and a cathode wire in a parallel configuration with the anode and cathode wires twisted together' is 'very likely', 'likely', 'neutral', 'unlikely', or 'very unlikely'."
+"Initial state": "We have 3 sentences: (1) a reported design uses an anode wire and a cathode wire twisted together in a parallel configuration, (2) 'parallel' means everywhere equidistant and non-intersecting, (3) 'twisted together' means helically wound."
+"Initial graph": {"Statement": {"s1": "A reported design uses an anode wire and a cathode wire twisted together in a parallel configuration.", "s2": "In geometry, 'parallel' means everywhere equidistant and never intersecting.", "s3": "'Twisted together' means the wires are helically wound."}, "Entailment": {"s1": "Evidence", "s2": "Evidence", "s3": "Evidence"}}
+"Action 1": "Combine s2 and s3 to assess geometric compatibility."
+"State 1": "From s2 and s3, helically wound (twisted) wires cannot be geometrically parallel."
+"Graph 1": {"Statement": {"s4": "Helically wound wires are not geometrically parallel."}, "Entailment": {"s4": ["s2", "s3"]}}
+"Action 2": "Compare the reported description (s1) with the incompatibility (s4)."
+"State 2": "Since s1 requires the wires to be both twisted and parallel, and s4 says that is impossible, mark the description as self-contradictory."
+"Graph 2": {"Statement": {"s5": "The description is self-contradictory."}, "Entailment": {"s5": ["s1", "s4"]}}
+"Action 3": "Map the contradiction (s5) to a likelihood judgment of the claim."
+"State 3": "Claims containing an internal contradiction are very unlikely."
+"Final answer": "very unlikely"
+
+
+### Example Input 3:
+"Problem": "sent1: the A15 phase of nb3si is normally a high-pressure phase sent2: the A15 phase of nb3si can be prepared in bulk near atmospheric pressure by rapidly quenching liquid niobium silicide on a rotating copper wheel and annealing sent3: the referenced figure shows that at high pressure the A15 nb3si superconducting critical temperature (tc) drops relative to the tetragonal phase sent4: 'regardless of pressure' means for all pressures sent5: if there exists any pressure where A15 nb3si does not have a higher tc than tetragonal nb3si then the statement 'A15 nb3si has a higher tc than tetragonal nb3si regardless of pressure' is false sent6: there exists at least one pressure (a high-pressure regime) where A15 nb3si does not have a higher tc than tetragonal nb3si\n\nclaim: A15 Nb3Si has a higher superconducting critical temperature than tetragonal Nb3Si, regardless of pressure."
+
+### Example Output 3:
+"Goal": "Determine the claim 'A15 Nb3Si has a higher superconducting critical temperature than tetragonal Nb3Si, regardless of pressure' is 'very likely', 'likely', 'neutral', 'unlikely', or 'very unlikely'."
+"Initial state": "We have 6 sentences 'The A15 phase of Nb3Si is normally a high-pressure phase', 'The A15 phase of Nb3Si can be prepared in bulk near atmospheric pressure by rapidly quenching and annealing', 'The referenced figure shows that at high pressure the A15 Nb3Si Tc drops relative to the tetragonal phase', ''Regardless of pressure' means for all pressures', 'If there exists any pressure where A15 Nb3Si does not have a higher Tc than tetragonal Nb3Si then the statement is false', 'There exists at least one pressure (a high-pressure regime) where A15 Nb3Si does not have a higher Tc than tetragonal Nb3Si'."
+"Initial graph": {"Statement": {"s1": "The A15 phase of Nb3Si is normally a high-pressure phase.", "s2": "The A15 phase of Nb3Si can be prepared in bulk near atmospheric pressure by rapidly quenching and annealing.", "s3": "At high pressure, the A15 Nb3Si Tc drops relative to the tetragonal phase.", "s4": "'Regardless of pressure' means for all pressures.", "s5": "If there exists any pressure where A15 Nb3Si does not have a higher Tc than tetragonal Nb3Si, then the 'regardless of pressure' claim is false.", "s6": "There exists at least one pressure where A15 Nb3Si does not have a higher Tc than tetragonal Nb3Si."}, "Entailment": {"s1": "Evidence", "s2": "Evidence", "s3": "Evidence", "s4": "Evidence", "s5": "Evidence", "s6": "Evidence"}}
+"Action 1": "From s3, infer the existence of a counterexample pressure."
+"State 1": "Because s3 states A15 Tc drops relative to tetragonal at high pressure, there exists at least one pressure where A15 does not have higher Tc than tetragonal."
+"Graph 1": {"Statement": {"s10": "There exists a pressure where A15 Nb3Si does not have higher Tc than tetragonal Nb3Si."}, "Entailment": {"s10": ["s3"]}}
+"Action 2": "Apply the logic of 'regardless of pressure' to the counterexample."
+"State 2": "Given s10 (a counterexample pressure exists) and s5 (any counterexample falsifies a 'regardless of pressure' claim), the claim is false."
+"Graph 2": {"Statement": {"s11": "The claim 'A15 Nb3Si has higher Tc than tetragonal Nb3Si regardless of pressure' is false."}, "Entailment": {"s11": ["s10", "s5"]}}
+"Action 3": "Compare s11 and the claim."
+"State 3": "Since s11 concludes the claim is false, the claim is very unlikely to be true."
+"Final answer": "very unlikely"
+
+
+### Example Input 4:
+"Problem": "sent1: GaN has a bandgap of about 3.4 eV. sent2: InN has a bandgap of about 0.7 eV. sent3: For InxGa1−xN, the bandgap lies between the endpoints with bowing; for x = 0.4 it is typically around 1.75–1.8 eV. sent4: Bandedge luminescence approximately equals the semiconductor bandgap. sent5: Plasma-assisted MOCVD can form epitaxial InGaN films on sapphire. sent6: A report claims an In0.4Ga0.6N film shows bandedge luminescence at 1.5 eV. sent7: A large (>~0.2 eV) downward deviation from the expected bandgap at fixed composition usually indicates non-bandedge emission or a different composition. sent8: The same report asserts the film is compositionally uniform and epitaxial on sapphire. sent9: Strain and typical experimental uncertainties at this composition are insufficient to lower the true bandedge by ~0.25–0.3 eV.\n\nclaim: In0.4Ga0.6N was formed via plasma assisted MOCVD resulting in a compositionally uniform epitaxial film on sapphire showing bandedge luminescence at 1.5 eV."
+
+### Example Output 4:
+"Goal": "Determine whether the claim 'In0.4Ga0.6N was formed via plasma assisted MOCVD resulting in a compositionally uniform epitaxial film on sapphire showing bandedge luminescence at 1.5 eV' is 'very likely', 'likely', 'neutral', 'unlikely', or 'very unlikely'."
+"Initial state": "We have 9 sentences 'GaN has a bandgap of about 3.4 eV', 'InN has a bandgap of about 0.7 eV', 'For InxGa1−xN, the bandgap lies between the endpoints with bowing; for x = 0.4 it is typically around 1.75–1.8 eV', 'Bandedge luminescence approximately equals the semiconductor bandgap', 'Plasma-assisted MOCVD can form epitaxial InGaN films on sapphire', 'A report claims an In0.4Ga0.6N film shows bandedge luminescence at 1.5 eV', 'A large (>~0.2 eV) downward deviation from the expected bandgap at fixed composition usually indicates non-bandedge emission or a different composition', 'The same report asserts the film is compositionally uniform and epitaxial on sapphire', 'Strain and typical experimental uncertainties at this composition are insufficient to lower the true bandedge by ~0.25–0.3 eV'."
+"Initial graph": {"Statement": {"s1": "GaN has a bandgap of about 3.4 eV.", "s2": "InN has a bandgap of about 0.7 eV.", "s3": "For InxGa1−xN, the bandgap lies between the endpoints with bowing; for x = 0.4 it is typically around 1.75–1.8 eV.", "s4": "Bandedge luminescence approximately equals the semiconductor bandgap.", "s5": "Plasma-assisted MOCVD can form epitaxial InGaN films on sapphire.", "s6": "A report claims an In0.4Ga0.6N film shows bandedge luminescence at 1.5 eV.", "s7": "A large (>~0.2 eV) downward deviation from the expected bandgap at fixed composition usually indicates non-bandedge emission or a different composition.", "s8": "The same report asserts the film is compositionally uniform and epitaxial on sapphire.", "s9": "Strain and typical experimental uncertainties at this composition are insufficient to lower the true bandedge by ~0.25–0.3 eV."}, "Entailment": {"s1": "Evidence", "s2": "Evidence", "s3": "Evidence", "s4": "Evidence", "s5": "Evidence", "s6": "Evidence", "s7": "Evidence", "s8": "Evidence", "s9": "Evidence"}}
+"Action 1": "Combine s1, s2, and s3 to estimate the expected bandgap of In0.4Ga0.6N."
+"State 1": "Given the GaN and InN endpoints and bowing behavior, In0.4Ga0.6N should have a bandgap around 1.75–1.8 eV."
+"Graph 1": {"Statement": {"s10": "In0.4Ga0.6N is expected to have a bandgap around 1.75–1.8 eV."}, "Entailment": {"s10": ["s1", "s2", "s3"]}}
+"Action 2": "Use s4 with s10 to infer the expected bandedge luminescence energy."
+"State 2": "Bandedge luminescence for In0.4Ga0.6N should be near 1.75–1.8 eV."
+"Graph 2": {"Statement": {"s11": "The expected bandedge luminescence for In0.4Ga0.6N is ~1.75–1.8 eV."}, "Entailment": {"s11": ["s4", "s10"]}}
+"Action 3": "Compare the report’s 1.5 eV value (s6) with the expected value (s11)."
+"State 3": "1.5 eV is ~0.25–0.3 eV lower than expected, indicating inconsistency with bandedge emission at the stated composition."
+"Graph 3": {"Statement": {"s12": "The reported 1.5 eV 'bandedge' is significantly below the expected bandedge for In0.4Ga0.6N."}, "Entailment": {"s12": ["s6", "s11"]}}
+"Action 4": "Incorporate constraints from s7, s8, and s9 to assess plausibility of the claimed combination (uniform composition on sapphire yet 1.5 eV bandedge)."
+"State 4": "Given typical strain/uncertainty limits and the assertion of uniform composition, a true 1.5 eV bandedge is not credible; it would more likely reflect different composition or non-bandedge emission."
+"Graph 4": {"Statement": {"s13": "The claimed compositionally uniform In0.4Ga0.6N film on sapphire showing 1.5 eV bandedge luminescence is implausible."}, "Entailment": {"s13": ["s7", "s8", "s9", "s12"]}}
+"Action 5": "Compare s13 and the claim."
+"State 5": "Since s13 contradicts the claim’s key point (1.5 eV bandedge at x=0.4), the claim is not supported."
+"Final answer": "very unlikely"
