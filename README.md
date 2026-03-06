@@ -1,35 +1,66 @@
-# DeepVerify: Evidence-Based Scientific Claim Verification
+# DeepVerify: Evidence-Based Expert-Level Scientific Claim Verification
 
-**DeepVerify** empowers state-of-the-art language models with search and reasoning tools to perform **evidence-based scientific claim verification**. Given a scientific claim, the system predicts its veracity using both retrieved literature and the model’s internal knowledge.
+This repository contains the code for our agentic system for scientific claim verification.
+
+## Overview
+
+<p align="center">
+  <img src='https://raw.githubusercontent.com/xiongsiheng/DeepVerify/main/misc/Framework.png' width=850>
+</p>
+
+**DeepVerify** equips state-of-the-art language models with search and reasoning tools to perform **evidence-based expert-Level scientific claim verification**. Given an expert-Level scientific claim, the system predicts its veracity using both retrieved literature and the model’s internal knowledge.
 
 Built on the **MCP server framework**, DeepVerify is **simple, modular, and extensible**, allowing to easily integrate custom tools and build your own specialized research agents.
 
-<p align="center">
-  <img src='https://raw.githubusercontent.com/xiongsiheng/DeepVerify/main/misc/MARS.png' width=650>
-</p>
-
-We also introduce **MARS** (Multi-Agent Reasoning System), developed upon our previous work [**SWAP**](https://github.com/xiongsiheng/SWAP). MARS leverages **entailment graphs** to guide multi-step reasoning, improving the accuracy and transparency of the verification process.
+For structured reasoning, DeepVerify incorporates [MARS](https://github.com/xiongsiheng/DeepVerify/tree/main/mars) **(Multi-Agent Reasoning System)**, developed upon our previous work [SWAP](https://github.com/xiongsiheng/SWAP) **(Structure-aware Planning)**. MARS leverages entailment graphs to guide multi-step reasoning, improving the accuracy and transparency of the verification process.
 
 <p align="center">
-  <img src='https://raw.githubusercontent.com/xiongsiheng/DeepVerify/main/misc/DeepControl.png' width=650>
+  <img src='https://raw.githubusercontent.com/xiongsiheng/DeepVerify/main/misc/Example.png' width=650>
 </p>
 
-Our ongoing project, **DeepControl: Enhancing Research Agents via Process-Level Verification**, extends this vision. DeepControl is a plug-in framework that verifies both the **reasoning process** and **tool usage** of deep research agents. By inspecting intermediate workflows and providing adaptive feedback, it enhances reliability and scientific rigor.
-To enable **adaptive and self-improving control**, DeepControl is trained via **reinforcement fine-tuning**, enabling it to learn *when* and *how* to intervene during complex reasoning and tool-invocation sequences.
+Models trained with our policy training framework [DeepControl](https://github.com/xiongsiheng/DeepControl/tree/main) **(Adaptive Information Control)** can be deployed locally and directly integrated into the DeepVerify agent pipeline.
+
 
 ## Table of Contents
+- [Quickstart](#quickstart)
 - [Installation](#installation)
 - [Launch MCP Server](#launch-mcp-server)
 - [Agents](#agents)
 - [API Keys](#api-keys)
 - [Notes](#notes)
+- [Citation](#citation)
+
+## Quickstart
+
+If you just want to get the system running end-to-end:
+
+```bash
+# 1. Install dependencies
+pixi install
+
+# 2. Enter the pixi environment
+pixi shell
+
+# 3. Create your environment file
+cp env.sample .env
+# Edit .env with your API keys
+
+# 4. Load environment variables
+set -a && source .env && set +a
+
+# 5. Start the MCP server
+pixi run mcp-server-dev
+
+# 6. In another shell, run an agent
+python -m deepverify.agents.basic.workflow_fixed --claim "Ultra-high performance concrete with a compressive strength greater than 45,000 psi exists."
+```
 
 ## Installation
 ```bash
 pixi install
 ```
 
-We use [pixi](https://pixi.sh/latest/) for python environment management.  You can probablly install using other tools + the `pyproject.toml`.
+We use [pixi](https://pixi.sh/latest/) for Python environment management. You can probably install the project with other tools using `pyproject.toml`, but the documented workflow assumes `pixi`.
 
 ## Launch MCP Server
 ```bash
@@ -37,7 +68,7 @@ We use [pixi](https://pixi.sh/latest/) for python environment management.  You c
 pixi shell
 
 # Set environment variables
-set -a && source env
+set -a && source .env && set +a
 
 # dev (single worker, auto-restart on code change)
 pixi run mcp-server-dev
@@ -55,10 +86,16 @@ pixi run mcp-server
 All agents support tool whitelisting to control which tools are available. This is **strongly recommended** as providing too many tools can hurt performance.
 
 ```bash
-# JDR Agent - Tool whitelist examples
-python -m deepverify.agents.jdr.jdr --claim "Ultra-high performance concrete with a compressive strength greater than 45,000 psi exists." --no_tools
-python -m deepverify.agents.jdr.jdr --claim "Ultra-high performance concrete with a compressive strength greater than 45,000 psi exists." --tool_whitelist generate_queries question_answer
-python -m deepverify.agents.jdr.jdr --claim "Ultra-high performance concrete with a compressive strength greater than 45,000 psi exists." --all_tools
+# Load pixi environment
+pixi shell
+
+# Load environment variables
+set -a && source .env && set +a
+
+# DeepResearch Agent - Tool whitelist examples
+python -m deepverify.agents.deepresearch.deepresearch --claim "Ultra-high performance concrete with a compressive strength greater than 45,000 psi exists." --no_tools
+python -m deepverify.agents.deepresearch.deepresearch --claim "Ultra-high performance concrete with a compressive strength greater than 45,000 psi exists." --tool_whitelist generate_queries question_answer
+python -m deepverify.agents.deepresearch.deepresearch --claim "Ultra-high performance concrete with a compressive strength greater than 45,000 psi exists." --all_tools
 ```
 
 ### Basic Usage
@@ -68,20 +105,22 @@ python -m deepverify.agents.jdr.jdr --claim "Ultra-high performance concrete wit
 pixi shell
 
 # Set environment variables
-set -a && source .env
+set -a && source .env && set +a
 
-# Run the hard-coded pipeline
-python -m deepverify.agents.dspy_basic.pipeline --claim "Ultra-high performance concrete with a compressive strength greater than 45,000 psi exists."
+# Run the fixed workflow
+python -m deepverify.agents.basic.workflow_fixed --claim "Ultra-high performance concrete with a compressive strength greater than 45,000 psi exists."
 
 # Run the multi-agent reasoning system (MARS)
-python -m deepverify.agents.dspy_basic.mars --claim "Ultra-high performance concrete with a compressive strength greater than 45,000 psi exists."
+python -m deepverify.agents.basic.workflow_mars --claim "Ultra-high performance concrete with a compressive strength greater than 45,000 psi exists."
 
 # Run ReAct agent
-python -m deepverify.agents.dspy_basic.mcp_react_agent --claim "Ultra-high performance concrete with a compressive strength greater than 45,000 psi exists."  --feasibility_assessment
+python -m deepverify.agents.basic.react_agent --claim "Ultra-high performance concrete with a compressive strength greater than 45,000 psi exists."  --feasibility_assessment
 ```
 
+The `workflow_fixed` and `workflow_mars` modules are staged workflows. The `react_agent` module uses a ReAct-style tool-calling agent.
+
 ## API Keys
-You need a variety of API keys to run this - if you don't have them but you want to test, you can comment out those tools, though it definitely won't work as intended.
+You need several API keys to run the full system. If you only want to smoke test the code path, you can disable or comment out tools, but the system will not behave as intended.
 
 Copy `env.sample` to `.env` and fill in your API keys:
 ```bash
@@ -91,32 +130,45 @@ cp env.sample .env
 
 ### Required Environment Variables
 
+At minimum, you should expect to need LLM credentials plus the retrieval/tooling credentials used by the tools you enable.
+
 ```bash
 # LLM keys
-export GEMINI_API_KEY=
-export OPENAI_API_KEY=
-export ANTHROPIC_API_KEY=
+GEMINI_API_KEY=
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
 
 # SERPAPI (for `search_google_scholar` + `search_google` tool)
-export SERPAPI_API_KEY=
+SERPAPI_API_KEY=
 
 # JINA Reader (for `read_url` tool)
-export JINA_API_KEY=
+JINA_API_KEY=
 
 # LangSmith for tracing and debugging LangGraph agents
-export LANGCHAIN_TRACING_V2="true"
-export LANGCHAIN_API_KEY="YOUR_LANGCHAIN_API_KEY"
-export LANGCHAIN_PROJECT="XFarScape Research Agent"
+LANGCHAIN_TRACING_V2="true"
+LANGCHAIN_API_KEY=
+LANGCHAIN_PROJECT="DeepVerify Research Agent"
 ```
+
+`LANGCHAIN_*` is optional unless you want tracing/debugging.
 
 ## Notes
 - **Tool Selection** - evidence suggests that giving an agent more tools does not make it better.  If you're testing agents, you should whitelist tool names, rather than using everything available on the MCP server.  This is especially important because some of the tools are (partially) redundant (`read_url` and `read_pdf`, for instance).
 
-## Contact
-If you have any inquiries, please feel free to raise an issue or reach out to sxiong45@gatech.edu.
+
 
 ## Citation
+
+```bibtex
+@article{xiong2026scaling,
+  title={Scaling Search-Augmented LLM Reasoning via Adaptive Information Control},
+  author={Xiong, Siheng and Gungordu, Oguzhan and Johnson, Blair and Kerce, James C and Fekri, Faramarz},
+  journal={arXiv preprint arXiv:2602.01672},
+  year={2026}
+}
 ```
+
+```bibtex
 @inproceedings{xiong-etal-2025-deliberate,
     title = "Deliberate Reasoning in Language Models as Structure-Aware Planning with an Accurate World Model",
     author = "Xiong, Siheng  and

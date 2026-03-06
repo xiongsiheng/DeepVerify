@@ -1,5 +1,5 @@
 """
-    deepverify.agents.dspy_basic
+    deepverify.agents.basic
 """
 
 import json
@@ -11,7 +11,7 @@ from typing import Optional, Callable
 from rich import print as rprint
 from fastmcp.client import Client # FastMCP variant ... could have used langchain_mcp_adapters as well
 from deepverify import config
-
+import os
 
 dspy.configure_cache(enable_disk_cache=True,
         enable_memory_cache=True)
@@ -162,7 +162,7 @@ class SubClaimExtractorSignature(dspy.Signature):
 class RAGBaseline(dspy.Module):
     
     def __init__(self, num_threads:int=8):
-        self.client = Client(config.MCP_URL, timeout=240)
+        self.client = Client(config.MCP_URL, timeout=3600)
         self.fast_lm = dspy.LM("openai/gpt-5-mini",temperature=1.0,max_tokens=16000)
         self.smart_lm = dspy.LM("openai/gpt-5",temperature=1.0,max_tokens=16000)
         self.query_generator =  dspy.ChainOfThought(DatabaseQuerySignature)
@@ -188,191 +188,170 @@ class RAGBaseline(dspy.Module):
         async with self.client:
             out = await self.client.call_tool(name, kwargs)
             return json.loads(out.content[0].text)
+    
+    async def aforward(self, claim:str, document_budget:int=100, fact_budget:int=100, claim_id:str='000'):
+        evidence_path = f'evidence/claim_{claim_id}_evidence_new.json'
+        os.makedirs('evidence', exist_ok=True)
+        collect_evidence = True if not os.path.exists(evidence_path) else False
+        load_evidence = False if not os.path.exists(evidence_path) else True
+        if collect_evidence:
+            # initial arguments for and against
+            print("Initial lines of argument...")
+            with dspy.context(lm=self.smart_lm):
+                results = await dspy.asyncify(self.explorative_arguer)(claim=claim, k=3)
 
-    async def aforward(self, claim:str, full_text_budget:int=5, document_budget:int=100, tokens_budget_per_doc:int=12000):
-        # initial arguments for and against
-        print("Initial lines of argument...")
-        with dspy.context(lm=self.smart_lm):
-            results = await dspy.asyncify(self.explorative_arguer)(claim=claim, k=3)
+            # generate sub-claims from arguments
+            print("Extracting sub-claims...")
+            args = [{'claim':claim, 'argument':arg} for arg in results.arguments]
+            results = await self.parallel(self.subclaim_extractor, self.fast_lm, args)
+            
+            # turn sub-claims into database queries
+            sub_claims = [claim] + self.flatten(list(map(lambda x: x.sub_claims, results)))
+            print(f"{len(sub_claims)} subclaims generated.")
+            print("Constructing Queries...")
+            args = [{"k":1, "claim":subclaim} for subclaim in sub_claims]
+            results = await self.parallel(self.query_generator, self.fast_lm, args)
+            full_text_queries = self.flatten(list(map(lambda x: x.full_text_queries, results)))
+            print(f"{len(full_text_queries)} full text queries constructed.")
 
-        # generate sub-claims from arguments
-        print("Extracting sub-claims...")
-        args = [{'claim':claim,'argument':arg} for arg in results.arguments]
-        results = await self.parallel(self.subclaim_extractor, self.fast_lm, args)
+            # Mitigate position bias
+            random.shuffle(full_text_queries)
+            evidence = []
+
+            # Google Web Search
+            print('search_google - start')
+            google_batches = await asyncio.gather(
+                *[self.ainvoke('search_google', query=query) for query in full_text_queries],
+                return_exceptions=True
+            )
+            google_batches = [gb for gb in google_batches if not isinstance(gb, Exception)]
+
+            def web_to_evidence(item: dict) -> dict:
+                url = item.get('url') or ''
+                pdf_url = url if url.lower().endswith('.pdf') else None
+                return {
+                    'text': item.get('content', '') or '',
+                    'id_raw': url or item.get('title', ''),  # fallback
+                    'metadata': {
+                        'title': item.get('title', ''),
+                        'url': url,
+                        'pdf_url': pdf_url,
+                        'source': 'google_web'
+                    }
+                }
+
+            web_results_flat = []
+            for batch in google_batches:
+                web_results_flat.extend(batch.get('results', []))
+            evidence.extend(web_to_evidence(r) for r in web_results_flat)
+            print('search_google - done')
+
+            # Google Scholar
+            print('search_google_scholar - start')
+            scholar_batches = await asyncio.gather(
+                *[self.ainvoke('search_google_scholar', query=query, max_results=10) for query in full_text_queries],
+                return_exceptions=True
+            )
+            scholar_batches = [sb for sb in scholar_batches if not isinstance(sb, Exception)]
+
+            # GoogleScholarResponse format:
+            # {
+            #   "status": "success"|"error",
+            #   "query": str,
+            #   "message": str,
+            #   "source": "Google Scholar (SerpAPI)",
+            #   "num_results": int,
+            #   "results": [{
+            #       "title": str, "authors": [str], "year": int|None,
+            #       "venue": str|None, "citations": int,
+            #       "url": str|None, "abstract": str, "source_id": str
+            #   }, ...]
+            # }
+
+            def scholar_to_evidence(item: dict) -> dict:
+                url = item.get('url') or ''
+                pdf_url = url if url.lower().endswith('.pdf') else None
+                id_raw = url or item.get('source_id') or item.get('title', '')
+                return {
+                    'text': item.get('abstract', '') or '',
+                    'id_raw': id_raw,
+                    'metadata': {
+                        'title': item.get('title', ''),
+                        'url': url,
+                        'pdf_url': pdf_url,
+                        'year': item.get('year'),
+                        'venue': item.get('venue'),
+                        'citations': item.get('citations', 0),
+                        'authors': item.get('authors', []),
+                        'source': 'google_scholar'
+                    }
+                }
+
+            scholar_results_flat = []
+            for batch in scholar_batches:
+                if batch.get('status') == 'success':
+                    scholar_results_flat.extend(batch.get('results', []))
+            evidence.extend(scholar_to_evidence(r) for r in scholar_results_flat)
+            print('search_google_scholar - done')
+
+            # Normalize + dedup
+            evidence = [json.loads(e) for e in sorted(set([json.dumps(e) for e in evidence]))]
+            print(f'{len(evidence)} documents retrieved.')
+
+            # summarize retrieved evidence and filter by relevance
+            print('evidence_summary - start')
+            evidence = evidence[:document_budget]
+            evidence = dedup_evidence(evidence)
+            print(f"{len(evidence)} documents after deduplication.")
+            args = [{'claims':sub_claims,'evidence_excerpt':e['text']} for e in evidence]
+            results = await self.parallel(self.evidence_summarizer, self.fast_lm, args)
+            facts2evidence = {}
+            facts = []
+            to_pull = []
+            for i in range(len(evidence)):
+                if results[i].relevant:
+                    facts2evidence[results[i].summary] = evidence[i]
+                    facts.append(results[i].summary)
+                    if 'pdf_url' in evidence[i]['metadata'].keys() and evidence[i]['metadata']['pdf_url'] is not None:
+                        to_pull.append((results[i].full_text_metric/len(sub_claims),evidence[i]))
+                else:
+                    continue
+            to_pull = sorted(to_pull, key=lambda x: -x[0])
+            print(f'{len(facts)} facts extracted.')
+
+            with open(evidence_path, 'w') as f:
+                json.dump({'claim':claim, 'facts':facts, 'facts2evidence':facts2evidence}, f)
+
+        if load_evidence:
+            with open(evidence_path, 'r') as f:
+                data = json.load(f)
+                claim = data['claim']
+                facts = data['facts'][:fact_budget]
+                facts2evidence = data['facts2evidence']
+
+        # Run MARS        
+        print('mars - start')
+        out = await self.ainvoke('mars', claims=[claim], statements=facts)
+        print('mars - done')
         
-        # turn sub-claims into database queries
-        sub_claims = [claim] + self.flatten(list(map(lambda x: x.sub_claims, results)))
-        print(f"{len(sub_claims)} subclaims generated.")
-        print("Constructing Queries...")
-        args = [{"k":1, "claim":subclaim} for subclaim in sub_claims]
-        results = await self.parallel(self.query_generator, self.fast_lm, args)
-        full_text_queries = self.flatten(list(map(lambda x: x.full_text_queries, results)))
-        print(f"{len(full_text_queries)} full text queries constructed.")
+        for extra_key in ['', '### Input', '### Output']:
+            out['claims'][0]['traj'].pop(extra_key)
+        likert_score_map = {'very unlikely':-2, 'unlikely':-1, 'neutral':0, 'likely':1, 'very likely':2}
+        final_answer = out['claims'][0]['traj']['Final answer'].strip()
+        if final_answer.startswith('"') or final_answer.startswith("'"):
+            final_answer = final_answer[1:-1]
 
-        # Mitigate position bias
-        random.shuffle(full_text_queries)
-        evidence = []
+        likert_score = likert_score_map.get(final_answer, -2)
+        
+        out = {
+            "claim" : claim,
+            "argument" : out,
+            "likert_score": likert_score,
+            "facts2evidence" : facts2evidence
+        }
+          
+        return out
 
-        # Google Web Search
-        print('search_google - start')
-        google_batches = await asyncio.gather(
-            *[self.ainvoke('search_google', query=query) for query in full_text_queries],
-            return_exceptions=True
-        )
-        google_batches = [gb for gb in google_batches if not isinstance(gb, Exception)]
-
-        def web_to_evidence(item: dict) -> dict:
-            url = item.get('url') or ''
-            pdf_url = url if url.lower().endswith('.pdf') else None
-            return {
-                'text': item.get('content', '') or '',
-                'id_raw': url or item.get('title', ''),  # fallback
-                'metadata': {
-                    'title': item.get('title', ''),
-                    'url': url,
-                    'pdf_url': pdf_url,
-                    'source': 'google_web'
-                }
-            }
-
-        web_results_flat = []
-        for batch in google_batches:
-            web_results_flat.extend(batch.get('results', []))
-        evidence.extend(web_to_evidence(r) for r in web_results_flat)
-        print('search_google - done')
-
-        # Google Scholar
-        print('search_google_scholar - start')
-        scholar_batches = await asyncio.gather(
-            *[self.ainvoke('search_google_scholar', query=query, max_results=10) for query in full_text_queries],
-            return_exceptions=True
-        )
-        scholar_batches = [sb for sb in scholar_batches if not isinstance(sb, Exception)]
-
-        # GoogleScholarResponse format:
-        # {
-        #   "status": "success"|"error",
-        #   "query": str,
-        #   "message": str,
-        #   "source": "Google Scholar (SerpAPI)",
-        #   "num_results": int,
-        #   "results": [{
-        #       "title": str, "authors": [str], "year": int|None,
-        #       "venue": str|None, "citations": int,
-        #       "url": str|None, "abstract": str, "source_id": str
-        #   }, ...]
-        # }
-
-        def scholar_to_evidence(item: dict) -> dict:
-            url = item.get('url') or ''
-            pdf_url = url if url.lower().endswith('.pdf') else None
-            id_raw = url or item.get('source_id') or item.get('title', '')
-            return {
-                'text': item.get('abstract', '') or '',
-                'id_raw': id_raw,
-                'metadata': {
-                    'title': item.get('title', ''),
-                    'url': url,
-                    'pdf_url': pdf_url,
-                    'year': item.get('year'),
-                    'venue': item.get('venue'),
-                    'citations': item.get('citations', 0),
-                    'authors': item.get('authors', []),
-                    'source': 'google_scholar'
-                }
-            }
-
-        scholar_results_flat = []
-        for batch in scholar_batches:
-            if batch.get('status') == 'success':
-                scholar_results_flat.extend(batch.get('results', []))
-        evidence.extend(scholar_to_evidence(r) for r in scholar_results_flat)
-        print('search_google_scholar - done')
-
-        # Normalize + dedup
-        evidence = [json.loads(e) for e in sorted(set([json.dumps(e) for e in evidence]))]
-        print(f'{len(evidence)} documents retrieved.')
-
-        # summarize retrieved evidence and filter by relevance
-        print('evidence_summary - start')
-        evidence = evidence[:document_budget]
-        evidence = dedup_evidence(evidence)
-        print(f"{len(evidence)} documents after deduplication.")
-        args = [{'claims':sub_claims,'evidence_excerpt':e['text']} for e in evidence]
-        results = await self.parallel(self.evidence_summarizer, self.fast_lm, args)
-        facts2evidence = {}
-        facts = []
-        to_pull = []
-        for i in range(len(evidence)):
-            if results[i].relevant:
-                facts2evidence[results[i].summary] = evidence[i]
-                facts.append(results[i].summary)
-                if 'pdf_url' in evidence[i]['metadata'].keys() and evidence[i]['metadata']['pdf_url'] is not None:
-                    to_pull.append((results[i].full_text_metric/len(sub_claims),evidence[i]))
-            else:
-                continue
-        to_pull = sorted(to_pull, key=lambda x: -x[0])
-        print(f'{len(facts)} facts extracted.')
-
-        if len(to_pull) > 0:
-            print(f'full_text_metric: (min: {to_pull[-1][0]}, max: {to_pull[0][0]})')
-            print('evidence_summary - done')
-
-            print("Accessing full text - start")
-            full_text_evidence     = await asyncio.gather(*[
-                self.ainvoke('read_url', url=e[1]['metadata']['pdf_url']) for e in to_pull[:full_text_budget]], return_exceptions=True)
-            full_text_evidence = [e for e in full_text_evidence if not isinstance(e, Exception)]
-            print("Accessing full text - done")
-
-            # --- limit each doc's length ---
-            CHARS_PER_TOKEN = 4                     # rough heuristic
-            MAX_CHARS = tokens_budget_per_doc * CHARS_PER_TOKEN
-
-            def safe_truncate(s: str, max_chars: int) -> str:
-                if not isinstance(s, str):
-                    s = "" if s is None else str(s)
-                return s[:max_chars]
-
-            for i in range(len(full_text_evidence)):
-                if 'content' in full_text_evidence[i]:
-                    full_text_evidence[i]['content'] = safe_truncate(full_text_evidence[i]['content'], MAX_CHARS)
-
-            print("Initial full-text argument...")
-            with dspy.context(lm=self.smart_lm):
-                results = await dspy.asyncify(self.argument_outliner)(claim=claim,
-                        evidence={to_pull[i][1]['id_raw']:full_text_evidence[i]['content'] for i in range(len(to_pull[:full_text_budget]))})
-
-            print("Final argument...")
-            with dspy.context(lm=self.smart_lm):
-                results = await dspy.asyncify(self.argument_finisher)(claim=claim,
-                        initial_argument=results.initial_argument,
-                        evidence={facts2evidence[facts[i]]['id_raw']:facts[i] for i in range(len(facts))})
-            out = dict(results)
-
-            out = {
-                "claim" : claim,
-                "argument"           : out,
-                "likert_score": out['likert_score'],
-                "facts2evidence" : facts2evidence
-            }
-
-            return out
-        else:
-            print(f"No full text to pull, constructing final argument.")
-            # reasoning model constructs final argument
-            with dspy.context(lm=self.smart_lm):
-                results = await dspy.asyncify(self.argument_constructor)(claim=claim,
-                        evidence={facts2evidence[facts[i]]['id_raw']:facts[i] for i in range(len(facts))})
-            out = dict(results)
-
-            out = {
-                "claim" : claim,
-                "argument"           : out,
-                "likert_score": out['likert_score'],
-                "facts2evidence" : facts2evidence
-            }
-
-            return out
 
 
 if __name__ == "__main__":
@@ -411,11 +390,14 @@ if __name__ == "__main__":
             assert path.endswith("jsonl")
             with open(path, 'r') as f:
                 lines = f.readlines()
+            # print(f"{len(lines)} lines found.")
+
+            # lines = lines[:1]
             problems = list(map(lambda x: json.loads(x), filter(lambda x: x.strip(), lines)))
             tick = time.time()
-            results = asyncio.run(loop([{'claim':p['claim']} for p in problems]))
+            results = asyncio.run(loop([{'claim':p['claim'], 'claim_id':p['problem_id']} for p in problems]))
             tock = time.time()
-            print(f"{(tock-tick)//60}s elapsed.")
+            print(f"{(tock-tick)}s elapsed.")
             if args.output_path:
                 assert args.output_path.endswith("pkl")
                 with open(args.output_path, 'wb') as f:
