@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-    jdr.pretty
+    deepresearch.pretty
     
     Utilities for pretty-printing traces
 """

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-    deepverify.agents.jdr
+    deepverify.agents.deepresearch
     
     (Baseline) Tool-calling agent
 """
@@ -62,7 +62,7 @@ async def _mcp_tool_call(tool_dict, tool_call):
 # Agent
 
 
-class JDROAIAgent:
+class DeepResearchOAIAgent:
     
     def __init__(self, model_name, tool_whitelist=None, all_tools=False, no_tools=False):
         self.model_name     = model_name
@@ -144,6 +144,6 @@ if __name__ == "__main__":
     parser.add_argument("--claim",      type=str, required=True)
     args = parser.parse_args()
     
-    agent = JDROAIAgent(model_name=args.model_name)
+    agent = DeepResearchOAIAgent(model_name=args.model_name)
     trace = asyncio.run(agent.arun(args.claim))
     rprint(trace)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-    deepverify.agents.jdr
+    deepverify.agents.deepresearch
     
     (Baseline) Tool-calling agent
 """
@@ -64,7 +64,7 @@ async def _mcp_tool_call(tool_dict, tool_call):
 # --
 # Agent
 
-class JDRAgent:
+class DeepResearchAgent:
 
     MODEL_CONFIGS = {
         "gemini/gemini-2.5-flash": {
@@ -84,7 +84,7 @@ class JDRAgent:
     }
     
     def __init__(self, model_name, tool_whitelist=None, all_tools=False, no_tools=False):
-        # Default tool whitelist for JDR agent - core reasoning and search tools
+        # Default tool whitelist for DeepResearch agent - core reasoning and search tools
         self.model_config   = self.MODEL_CONFIGS[model_name]
         self.system_prompt  = open(SYSTEM_PROMPT).read()
         self._acompletion   = disk_cache_fn(acompletion, fn_name="litellm-acompletion") if DO_CACHE else acompletion
@@ -182,7 +182,7 @@ if __name__ == "__main__":
     #     "mars"
     # ]
     
-    agent = JDRAgent(
+    agent = DeepResearchAgent(
         model_name=args.model_name,
         tool_whitelist=args.tool_whitelist,
         all_tools=args.all_tools,

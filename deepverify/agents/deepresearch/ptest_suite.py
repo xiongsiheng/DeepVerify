@@ -14,18 +14,18 @@ from rich.console import Console
 from tenacity import retry, stop_after_attempt
 
 from scify_formats import Problem
-from .jdr import JDRAgent
-from .jdr_oai import JDROAIAgent
+from .deepresearch import DeepResearchAgent
+from .deepresearch_oai import DeepResearchOAIAgent
 
 @retry(stop=stop_after_attempt(3))
 async def _run_one(sem, model_name, tool_whitelist, all_tools, no_tools, claim, output_dir):
     if 'openai/' in model_name:
-        print(f'using JDROAIAgent for {model_name}')
-        agent_cls  = JDROAIAgent
+        print(f'using DeepResearchOAIAgent for {model_name}')
+        agent_cls  = DeepResearchOAIAgent
         model_name = model_name.replace('openai/', '')
     else:
-        print(f'using JDRAgent for {model_name}')
-        agent_cls = JDRAgent
+        print(f'using DeepResearchAgent for {model_name}')
+        agent_cls = DeepResearchAgent
         
     async with sem:
         try:
